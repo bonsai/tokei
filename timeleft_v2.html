@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Left Today</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column; /* Align canvas and text vertically */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background: #111;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="timeCanvas" width="900" height="900"></canvas>
+    <div id="timeTextContainer" style="text-align: center; margin-top: 20px;">
+        <p id="hoursText" style="font-size: 24px; margin: 5px;"></p>
+        <p id="minutesText" style="font-size: 24px; margin: 5px;"></p>
+        <p id="secondsText" style="font-size: 24px; margin: 5px;"></p>
+    </div>
+    <script>
+        // Get references to DOM elements
+        const canvas = document.getElementById('timeCanvas');
+        const ctx = canvas.getContext('2d');
+        const hoursTextElement = document.getElementById('hoursText'); // For displaying hours text
+        const minutesTextElement = document.getElementById('minutesText'); // For displaying minutes text
+        const secondsTextElement = document.getElementById('secondsText'); // For displaying seconds text
+
+        // Main function to draw the time visualization
+        function drawTimeLeft() {
+            // Clear the canvas on each frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate current time and time remaining today
+            const now = new Date();
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999); // Set to the last millisecond of the day
+
+            const timeLeft = endOfDay - now; // Total milliseconds left
+            const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            // Update the HTML text elements with the calculated time left
+            hoursTextElement.textContent = hoursLeft + ' hours';
+            minutesTextElement.textContent = minutesLeft + ' minutes';
+            secondsTextElement.textContent = secondsLeft + ' seconds';
+
+            // Constants for layout
+            const titleHeight = 30; // Pixel height allocated for drawing each section title
+            const titleGap = 10;    // Pixel gap between a section title and the start of its corresponding blocks
+            let currentY = 0;       // Tracks the current vertical drawing position on the canvas.
+                                    // It's incremented after each element (title, gap, block section) is drawn.
+
+            // --- DRAW HOURS SECTION ---
+            // Position and draw the "Hours" title
+            currentY += titleHeight;
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText("Hours", canvas.width / 2, currentY);
+            currentY += titleGap; // Add gap below title
+
+            // Draw hour squares
+            const hourSquareSize = 200;
+            const hoursPerRow = 4;
+            ctx.fillStyle = '#4a90e2'; // Blue color for hour squares
+            for (let i = 0; i < hoursLeft; i++) {
+                const row = Math.floor(i / hoursPerRow);
+                const col = i % hoursPerRow;
+                const x = col * hourSquareSize;
+                const yPos = currentY + row * hourSquareSize;
+                // Safeguard: only draw if the square fits within the canvas height
+                if (yPos + hourSquareSize <= canvas.height) {
+                    ctx.fillRect(x, yPos, hourSquareSize, hourSquareSize);
+                }
+            }
+            // Update currentY to be below the hours section
+            const hoursRows = Math.ceil(hoursLeft / hoursPerRow);
+            currentY += hoursRows * hourSquareSize;
+            if (hoursLeft === 0) { // Ensure some vertical space even if no hours are left
+                currentY += hourSquareSize / 2;
+            }
+
+            // --- DRAW MINUTES SECTION ---
+            // Position and draw the "Minutes" title
+            currentY += titleHeight + titleGap; // Add space for the title itself and a gap above it
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            // textAlign is still 'center' from Hours section
+            ctx.fillText("Minutes", canvas.width / 2, currentY);
+            currentY += titleGap; // Add gap below title
+
+            // Draw minute squares
+            const minuteSquareSize = 60;
+            const minutesPerRow = 15; // Canvas width (900) / minuteSquareSize (60)
+            ctx.fillStyle = '#50d2c2'; // Teal color for minute squares
+            for (let i = 0; i < minutesLeft; i++) {
+                const row = Math.floor(i / minutesPerRow);
+                const col = i % minutesPerRow;
+                const x = col * minuteSquareSize;
+                const yPos = currentY + row * minuteSquareSize;
+                // Safeguard: only draw if the square fits within the canvas height
+                if (yPos + minuteSquareSize <= canvas.height) {
+                    ctx.fillRect(x, yPos, minuteSquareSize, minuteSquareSize);
+                }
+            }
+            // Update currentY to be below the minutes section
+            const minutesRows = Math.ceil(minutesLeft / minutesPerRow);
+            currentY += minutesRows * minuteSquareSize;
+            if (minutesLeft === 0) { // Ensure some vertical space even if no minutes are left
+                currentY += minuteSquareSize / 2;
+            }
+
+            // --- DRAW SECONDS SECTION ---
+            // Position and draw the "Seconds" title
+            currentY += titleHeight + titleGap; // Add space for the title itself and a gap above it
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            // textAlign is still 'center'
+            ctx.fillText("Seconds", canvas.width / 2, currentY);
+            currentY += titleGap; // Add gap below title
+
+            // Draw second squares
+            const secondSquareSize = 10;
+            const secondsPerRow = 90; // Canvas width (900) / secondSquareSize (10)
+            ctx.fillStyle = '#e74c3c'; // Red color for second squares
+            for (let i = 0; i < secondsLeft; i++) {
+                const row = Math.floor(i / secondsPerRow);
+                const col = i % secondsPerRow;
+                const x = col * secondSquareSize;
+                const yPos = currentY + row * secondSquareSize;
+                // Safeguard: only draw if the square fits within the canvas height
+                if (yPos + secondSquareSize <= canvas.height) {
+                    ctx.fillRect(x, yPos, secondSquareSize, secondSquareSize);
+                }
+            }
+            // currentY doesn't need further updates as this is the last section vertically
+
+            // Request the next animation frame to create a loop
+            requestAnimationFrame(drawTimeLeft);
+        }
+
+        // Start the animation loop
+        drawTimeLeft();
+    </script>
+</body>
+</html>
