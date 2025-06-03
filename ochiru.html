@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Block Clock</title>
+    <style>
+        /* CSS */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222;
+            margin: 0;
+            overflow: hidden; /* ブロックが落ちる際にスクロールバーが出ないように */
+            font-family: 'Roboto Mono', monospace; /* 全体的なフォント設定 */
+        }
+
+        .clock-container {
+            display: flex;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden; /* ブロックの落下アニメーションのため */
+            height: 200px; /* 数字が表示される最大の高さ */
+            width: 800px; /* 指定された幅 */
+        }
+
+        .digit-column {
+            display: flex;
+            flex-direction: column-reverse; /* ブロックが下から積み上がるように */
+            width: 80px; /* 各数字の幅 */
+            height: 100%;
+            position: relative;
+            overflow: hidden; /* はみ出したブロックを隠す */
+        }
+
+        .digit-block {
+            width: 80px;
+            height: 80px; /* ブロックの高さ */
+            background: linear-gradient(135deg, #00bcd4 60%, #0097a7 100%); /* 立体感 */
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            font-weight: bold;
+            border: 2px solid #00838f;
+            box-sizing: border-box;
+            position: absolute; /* 落下アニメーション用 */
+            left: 0;
+            bottom: 0; /* 最初は下から */
+            opacity: 0; /* 最初は非表示 */
+            transform: translateY(-200px);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.5s;
+            z-index: 1;
+            box-shadow: 0 8px 20px 0 rgba(0,0,0,0.4), 0 2px 0 #26c6da inset, 0 -4px 0 #006064 inset;
+            border-radius: 10px;
+        }
+
+        .digit-block.active {
+            opacity: 1;
+            transform: translateY(0); /* 落下して表示される */
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in; /* 跳ねるようなアニメーション */
+        }
+
+        .digit-block.disappearing {
+            opacity: 0;
+            transform: translateY(400px) scale(0.7) rotateX(60deg); /* より下に落ちて小さくなりつつ消える */
+            transition: transform 0.7s cubic-bezier(0.6, 0.1, 0.7, 1.5), opacity 0.5s;
+            z-index: 0;
+            filter: blur(2px);
+        }
+
+        .separator {
+            color: #00bcd4;
+            font-size: 60px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-container">
+        <div id="hour-tens" class="digit-column"></div>
+        <div id="hour-units" class="digit-column"></div>
+        <div class="separator">:</div>
+        <div id="minute-tens" class="digit-column"></div>
+        <div id="minute-units" class="digit-column"></div>
+        <div class="separator">:</div>
+        <div id="second-tens" class="digit-column"></div>
+        <div id="second-units" class="digit-column"></div>
+    </div>
+    <div id="remaining-time" style="color:#fff; text-align:center; font-size:2rem; margin-top:30px; text-shadow:0 2px 8px #00bcd4; font-family:'Roboto Mono',monospace;"></div>
+
+    <script>
+        // JavaScript
+        document.addEventListener('DOMContentLoaded', () => {
+            const hourTens = document.getElementById('hour-tens');
+            const hourUnits = document.getElementById('hour-units');
+            const minuteTens = document.getElementById('minute-tens');
+            const minuteUnits = document.getElementById('minute-units');
+            const secondTens = document.getElementById('second-tens');
+            const secondUnits = document.getElementById('second-units');
+
+            // 各桁の現在のブロック要素を保持するマップ
+            const currentBlocks = {
+                'hour-tens': null,
+                'hour-units': null,
+                'minute-tens': null,
+                'minute-units': null,
+                'second-tens': null,
+                'second-units': null
+            };
+
+            // 過去のブロックを管理する配列 (消去用)
+            const blockHistory = {
+                'hour-tens': [],
+                'hour-units': [],
+                'minute-tens': [],
+                'minute-units': [],
+                'second-tens': [],
+                'second-units': []
+            };
+
+            // 各桁のブロックが積み上がる高さを管理
+            const columnHeights = {
+                'hour-tens': 0,
+                'hour-units': 0,
+                'minute-tens': 0,
+                'minute-units': 0,
+                'second-tens': 0,
+                'second-units': 0
+            };
+
+            const BLOCK_HEIGHT = 80; // CSSで定義したブロックの高さ
+            const MAX_BLOCKS_IN_COLUMN = 3; // 各桁に表示するブロックの最大数（例：3つ積み上がったら古いものを消す）
+            const ANIMATION_DURATION = 500; // アニメーションの完了を待つ時間 (ms)
+
+            /**
+             * 新しい数字ブロック要素を作成します。
+             * @param {string} value - 表示する数字の文字列。
+             * @returns {HTMLElement} 作成されたdiv要素。
+             */
+            function createDigitBlock(value) {
+                const block = document.createElement('div');
+                block.className = 'digit-block';
+                block.textContent = value;
+                block.style.zIndex = 1; // 新しいブロックは前面に
+                return block;
+            }
+
+            /**
+             * 指定された桁の数字を更新し、ブロックのアニメーションを制御します。
+             * @param {HTMLElement} columnElement - 数字ブロックを追加する桁のDOM要素。
+             * @param {string} columnId - 桁のID (例: 'hour-tens')。
+             * @param {string} newValue - 表示する新しい数字。
+             */
+            function updateDigit(columnElement, columnId, newValue) {
+                // 現在のブロックと同じ数字なら何もしない
+                if (currentBlocks[columnId] && currentBlocks[columnId].textContent === newValue) {
+                    return;
+                }
+
+                // 現在のブロックを非アクティブにする（消えるアニメーション準備）
+                if (currentBlocks[columnId]) {
+                    currentBlocks[columnId].classList.remove('active');
+                    currentBlocks[columnId].classList.add('disappearing');
+
+                    // 消えるアニメーションが完了したら要素をDOMから削除
+                    setTimeout(() => {
+                        if (columnElement.contains(currentBlocks[columnId])) {
+                            columnElement.removeChild(currentBlocks[columnId]);
+                        }
+                    }, ANIMATION_DURATION);
+                }
+
+                // 新しいブロックを作成し、表示位置を調整
+                const newBlock = createDigitBlock(newValue);
+                columnElement.appendChild(newBlock);
+
+                // 新しいブロックをアクティブにして落下アニメーションを開始
+                requestAnimationFrame(() => {
+                    newBlock.classList.add('active');
+                    // 新しいブロックは、現在のカラムの高さ分だけ上に配置される
+                    newBlock.style.bottom = `${columnHeights[columnId]}px`;
+                });
+
+                // 現在のブロックを更新
+                currentBlocks[columnId] = newBlock;
+
+                // ブロックの履歴に追加
+                blockHistory[columnId].push(newBlock);
+                columnHeights[columnId] += BLOCK_HEIGHT; // カラムの高さを更新
+
+                // MAX_BLOCKS_IN_COLUMN を超えたら、一番古いブロックを消す
+                if (blockHistory[columnId].length > MAX_BLOCKS_IN_COLUMN) {
+                    const oldestBlock = blockHistory[columnId].shift(); // 配列の先頭から削除
+                    if (oldestBlock) {
+                        oldestBlock.classList.add('disappearing'); // 消えるアニメーション
+                        // アニメーション完了後にDOMから削除
+                        setTimeout(() => {
+                            if (columnElement.contains(oldestBlock)) {
+                                columnElement.removeChild(oldestBlock);
+                            }
+                        }, ANIMATION_DURATION);
+                    }
+
+                    // 残っているブロックの表示位置を調整（下に詰める）
+                    blockHistory[columnId].forEach((block, index) => {
+                        block.style.bottom = `${index * BLOCK_HEIGHT}px`;
+                    });
+                    columnHeights[columnId] = blockHistory[columnId].length * BLOCK_HEIGHT; // カラムの高さを再計算
+                }
+            }
+
+            /**
+             * 現在の時刻を取得し、時計の表示を更新します。
+             */
+            function updateClock() {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+
+                updateDigit(hourTens, 'hour-tens', hours[0]);
+                updateDigit(hourUnits, 'hour-units', hours[1]);
+                updateDigit(minuteTens, 'minute-tens', minutes[0]);
+                updateDigit(minuteUnits, 'minute-units', minutes[1]);
+                updateDigit(secondTens, 'second-tens', seconds[0]);
+                updateDigit(secondUnits, 'second-units', seconds[1]);
+            }
+
+            // 残り時間表示用
+            const remainingTimeElem = document.getElementById('remaining-time');
+
+            function updateRemainingTime() {
+                const now = new Date();
+                const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                let diff = end - now;
+                if (diff < 0) diff = 0;
+                const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                remainingTimeElem.textContent = `今日の残り時間: ${h}:${m}:${s}`;
+            }
+
+            // 初回実行
+            updateClock();
+            updateRemainingTime();
+
+            // 1秒ごとに更新
+            setInterval(() => {
+                updateClock();
+                updateRemainingTime();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
