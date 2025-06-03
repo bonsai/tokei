@@ -18,7 +18,7 @@
         }
 
         .clock-container {
-            display: flex;
+            display: none;
             background-color: #333;
             padding: 20px;
             border-radius: 10px;
@@ -41,22 +41,24 @@
         .digit-block {
             width: 80px;
             height: 80px; /* ブロックの高さ */
-            background-color: #00bcd4; /* ブロックの色 */
+            background: linear-gradient(135deg, #00bcd4 60%, #0097a7 100%); /* 立体感 */
             color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 60px;
             font-weight: bold;
-            border: 1px solid #000;
+            border: 2px solid #00838f;
             box-sizing: border-box;
             position: absolute; /* 落下アニメーション用 */
             left: 0;
             bottom: 0; /* 最初は下から */
             opacity: 0; /* 最初は非表示 */
-            transform: translateY(-200px); /* 最初は上から降らせるため上に配置 */
-            transition: transform 0.5s ease-out, opacity 0.5s ease-out; /* 落下と表示のアニメーション */
-            z-index: 1; /* 消えるブロックより前面に */
+            transform: translateY(-200px);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.5s;
+            z-index: 1;
+            box-shadow: 0 8px 20px 0 rgba(0,0,0,0.4), 0 2px 0 #26c6da inset, 0 -4px 0 #006064 inset;
+            border-radius: 10px;
         }
 
         .digit-block.active {
@@ -67,9 +69,10 @@
 
         .digit-block.disappearing {
             opacity: 0;
-            transform: translateY(200px); /* 下に落ちて消える */
-            transition: transform 0.5s ease-in, opacity 0.5s ease-out;
-            z-index: 0; /* 他のブロックの背面に */
+            transform: translateY(400px) scale(0.7) rotateX(60deg); /* より下に落ちて小さくなりつつ消える */
+            transition: transform 0.7s cubic-bezier(0.6, 0.1, 0.7, 1.5), opacity 0.5s;
+            z-index: 0;
+            filter: blur(2px);
         }
 
         .separator {
@@ -93,6 +96,7 @@
         <div id="second-tens" class="digit-column"></div>
         <div id="second-units" class="digit-column"></div>
     </div>
+    <div id="remaining-time" style="color:#fff; text-align:center; font-size:2rem; margin-top:30px; text-shadow:0 2px 8px #00bcd4; font-family:'Roboto Mono',monospace;"></div>
 
     <script>
         // JavaScript
@@ -232,11 +236,29 @@
                 updateDigit(secondUnits, 'second-units', seconds[1]);
             }
 
+            // 残り時間表示用
+            const remainingTimeElem = document.getElementById('remaining-time');
+
+            function updateRemainingTime() {
+                const now = new Date();
+                const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                let diff = end - now;
+                if (diff < 0) diff = 0;
+                const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                remainingTimeElem.textContent = `今日の残り時間: ${h}:${m}:${s}`;
+            }
+
             // 初回実行
             updateClock();
+            updateRemainingTime();
 
             // 1秒ごとに更新
-            setInterval(updateClock, 1000);
+            setInterval(() => {
+                updateClock();
+                updateRemainingTime();
+            }, 1000);
         });
     </script>
 </body>

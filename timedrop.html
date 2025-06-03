@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Sec Block Animation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        #timer {
+            width: 800px;
+            height: 300px;
+            position: relative;
+            background-color: white;
+            border: 2px solid black;
+        }
+
+        #hour, #min, #sec {
+            position: absolute;
+            top: 0;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+        }
+
+        #hour {
+            width: 120px;
+            height: 50px;
+            left: 20px;
+            background-color: red;
+        }
+
+        #min {
+            width: 60px;
+            height: 50px;
+            left: 160px;
+            background-color: orange;
+        }
+
+        #sec {
+            width: 6px;
+            height: 50px;
+            left: 230px;
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="timer">
+        <div id="hour">Hour</div>
+        <div id="min">Min</div>
+        <div id="sec">Sec</div>
+    </div>
+
+    <script>
+        const secBlock = document.getElementById("sec");
+        let position = 0;
+
+        function dropSecBlock() {
+            position += 10; 
+            secBlock.style.top = position + "px";
+
+            if (position >= 250) {
+                position = 0; 
+            }
+        }
+
+        setInterval(dropSecBlock, 1000);
+    </script>
+</body>
+</html>
