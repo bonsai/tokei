@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Clock</title>
+    <style>
+        #clock-container {
+            width: 900px;
+            height: 1200px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-around;
+            padding: 20px;
+            background-color: #f0f0f0; /* Optional for visualization */
+        }
+
+        /* Common styles for time elements */
+        #hours, #minutes, #seconds {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        #hours {
+            width: 200px;
+            height: 200px;
+            background-color: #3498db; /* Blue */
+            font-size: 80px;
+            border-radius: 10px;
+        }
+
+        #minutes {
+            width: 60px; /* This width might be too small for the font size, review if needed */
+            background-color: #2ecc71; /* Green */
+            font-size: 40px;
+            padding: 10px 20px; /* Adjust padding as height is not fixed */
+            border-radius: 5px;
+            margin: 0 10px; /* Spacing for row layout */
+        }
+
+        #seconds {
+            width: 10px; /* This width is very narrow, might need adjustment */
+            background-color: #e74c3c; /* Red */
+            font-size: 20px; /* Text might not fit well */
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="clock-container">
+        <div id="hours"></div>
+        <div id="minutes"></div>
+        <div id="seconds"></div>
+    </div>
+    <script>
+        function updateCountdown() {
+            const now = new Date();
+            const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+            const diffMillis = midnight.getTime() - now.getTime();
+
+            let hours = Math.floor((diffMillis / (1000 * 60 * 60)) % 24);
+            let minutes = Math.floor((diffMillis / (1000 * 60)) % 60);
+            let seconds = Math.floor((diffMillis / 1000) % 60);
+
+            // Add leading zeros
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+
+            document.getElementById('hours').textContent = hours;
+            document.getElementById('minutes').textContent = minutes;
+            document.getElementById('seconds').textContent = seconds;
+        }
+
+        updateCountdown(); // Initial call
+        setInterval(updateCountdown, 1000); // Update every second
+    </script>
+</body>
+</html>
