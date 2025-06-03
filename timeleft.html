@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Left Today</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background: #111;
+        }
+    </style>
+</head>
+<body>    <canvas id="timeCanvas" width="900" height="900"></canvas>
+    <script>
+        const canvas = document.getElementById('timeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawTimeLeft() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const now = new Date();
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999);
+            
+            const timeLeft = endOfDay - now;
+            const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            // Draw hours (200px squares)
+            ctx.fillStyle = '#4a90e2';
+            for (let i = 0; i < hoursLeft; i++) {
+                const row = Math.floor(i / 4);
+                const col = i % 4;
+                const x = col * 200;
+                const y = row * 200;
+                ctx.fillRect(x, y, 200, 200);
+            }
+
+            // Draw minutes (60px squares)
+            ctx.fillStyle = '#50d2c2';
+            const minuteStartY = Math.ceil(hoursLeft / 4) * 200;
+            for (let i = 0; i < minutesLeft; i++) {
+                const row = Math.floor(i / 15);
+                const col = i % 15;
+                const x = col * 60;
+                const y = minuteStartY + (row * 60);
+                ctx.fillRect(x, y, 60, 60);
+            }
+
+            // Draw seconds (10px squares)
+            ctx.fillStyle = '#e74c3c';
+            const secondStartY = minuteStartY + (Math.ceil(minutesLeft / 15) * 60);
+            for (let i = 0; i < secondsLeft; i++) {
+                const row = Math.floor(i / 90);
+                const col = i % 90;
+                const x = col * 10;
+                const y = secondStartY + (row * 10);
+                ctx.fillRect(x, y, 10, 10);
+            }
+
+            requestAnimationFrame(drawTimeLeft);
+        }
+
+        // Start the animation
+        drawTimeLeft();
+    </script>
+</body>
+</html>
